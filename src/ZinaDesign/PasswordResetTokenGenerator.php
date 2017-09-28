@@ -26,18 +26,14 @@ class PasswordResetTokenGenerator {
       return FALSE;
     }
     list($ts_b36, $hash) = $p;
-    try {
-      $ts = self::base36_to_int($ts_b36);
-    } catch (Kohana_Exception $e) {
-      return FALSE;
+    $ts = self::base36_to_int($ts_b36);
 
-    }
     # Check that the timestamp/uid has not been tampered with
     if (self::_make_token_with_timestamp($user, $ts) !== $token) {
       return FALSE;
     }
     # Check the timestamp is within limit
-    if ((self::_num_days(new DateTime('now')) - $ts) > self::PASSWORD_RESET_TIMEOUT_DAYS) {
+    if ((self::_num_days(new \DateTime('now')) - $ts) > self::PASSWORD_RESET_TIMEOUT_DAYS) {
       return FALSE;
     }
     return TRUE;
@@ -83,7 +79,7 @@ class PasswordResetTokenGenerator {
    * @return mixed
    */
   private static function _num_days($dt) {
-    $from = new DateTime('2001-01-01');
+    $from = new \DateTime('2001-01-01');
     return $dt->diff($from)->days;
   }
 
@@ -105,7 +101,7 @@ class PasswordResetTokenGenerator {
 
   public static function make_token($user) {
     return self::_make_token_with_timestamp($user,
-      self::_num_days(new DateTime('now')));
+      self::_num_days(new \DateTime('now')));
   }
 
   public static function urlsafe_b64encode($string) {
