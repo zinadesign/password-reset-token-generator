@@ -1,7 +1,8 @@
 <?php
+
 namespace ZinaDesign;
-class PasswordResetTokenGenerator
-{
+
+class PasswordResetTokenGenerator {
 
   const PASSWORD_RESET_TIMEOUT_DAYS = 1;
 
@@ -15,32 +16,31 @@ class PasswordResetTokenGenerator
    *
    * @return bool
    */
-  public static function check_token($user, $token)
-  {
+  public static function check_token($user, $token) {
     if (!($user && $token)) {
-      return false;
+      return FALSE;
     }
     # Parse the token
     $p = explode('-', $token);
     if (count($p) !== 2) {
-      return false;
+      return FALSE;
     }
     list($ts_b36, $hash) = $p;
     try {
       $ts = self::base36_to_int($ts_b36);
     } catch (Kohana_Exception $e) {
-      return false;
+      return FALSE;
 
     }
     # Check that the timestamp/uid has not been tampered with
     if (self::_make_token_with_timestamp($user, $ts) !== $token) {
-      return false;
+      return FALSE;
     }
     # Check the timestamp is within limit
     if ((self::_num_days(new DateTime('now')) - $ts) > self::PASSWORD_RESET_TIMEOUT_DAYS) {
-      return false;
+      return FALSE;
     }
-    return true;
+    return TRUE;
   }
 
   /**
@@ -50,18 +50,15 @@ class PasswordResetTokenGenerator
    *
    * @return mixed
    */
-  public static function int_to_base36($i)
-  {
+  public static function int_to_base36($i) {
     return base_convert($i, 10, 36);
   }
 
-  public static function base36_to_int($s)
-  {
+  public static function base36_to_int($s) {
     return base_convert($s, 36, 10);
   }
 
-  public static function salted_hmac($key_salt, $value, $secret = null)
-  {
+  public static function salted_hmac($key_salt, $value, $secret = NULL) {
     if (is_null($secret)) {
       $secret = '2!*^*2%#i#9cd_(m12qs6gn0y@k((gxzr5%2r=d1exk^5=8bju';
     }
@@ -69,15 +66,15 @@ class PasswordResetTokenGenerator
     return hash_hmac("sha1", $value, $key);
   }
 
-  private static function _make_hash_value($user, $timestamp)
-  {
+  private static function _make_hash_value($user, $timestamp) {
 
     if (!$user->last_login) {
       $login_timestamp = '';
-    } else {
+    }
+    else {
       $login_timestamp = $user->last_login;
     }
-    return ((string)$user->id . (string)$user->password . $login_timestamp . $timestamp);
+    return ((string) $user->id . (string) $user->password . $login_timestamp . $timestamp);
   }
 
   /**
@@ -85,20 +82,16 @@ class PasswordResetTokenGenerator
    *
    * @return mixed
    */
-  private static function _num_days($dt)
-  {
+  private static function _num_days($dt) {
     $from = new DateTime('2001-01-01');
     return $dt->diff($from)->days;
   }
 
-  private static function _make_token_with_timestamp($user, $timestamp)
-  {
+  private static function _make_token_with_timestamp($user, $timestamp) {
     $ts_b36 = self::int_to_base36($timestamp);
     $key_salt = "django.contrib.auth.tokens.PasswordResetTokenGenerator";
-    $hash = self::salted_hmac(
-      $key_salt,
-      self::_make_hash_value($user, $timestamp)
-    );
+    $hash = self::salted_hmac($key_salt,
+      self::_make_hash_value($user, $timestamp));
     $token = '';
     for ($i = 0; $i < strlen($hash); $i++) {
       $ch = $hash[$i];
@@ -110,9 +103,23 @@ class PasswordResetTokenGenerator
     return "{$ts_b36}-{$token}";
   }
 
-  public static function make_token($user)
-  {
+  public static function make_token($user) {
     return self::_make_token_with_timestamp($user,
       self::_num_days(new DateTime('now')));
+  }
+
+  public static function urlsafe_b64encode($string) {
+    $data = base64_encode($string);
+    $data = str_replace(['+', '/', '='], ['-', '_', ''], $data);
+    return $data;
+  }
+
+  public static function urlsafe_b64decode($string) {
+    $data = str_replace(['-', '_'], ['+', '/'], $string);
+    $mod4 = strlen($data) % 4;
+    if ($mod4) {
+      $data .= substr('====', $mod4);
+    }
+    return base64_decode($data);
   }
 }
